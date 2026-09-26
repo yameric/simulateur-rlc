@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratoire Virtuel : Circuit RLC Série en Régime Sinusoïdal Forcé</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#0B0F17',
+                            panel: '#151D2A',
+                            card: '#1E293B',
+                            border: '#334155',
+                            gbf: '#3B82F6',
+                            ch1: '#EAB308', // Yellow trace
+                            ch2: '#06B6D4', // Cyan trace
+                            resonance: '#10B981', // Green
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Rotary Knob Styling */
+        .knob-container {
+            touch-action: none;
+            cursor: ns-resize;
+        }
+
+        /* LED Indicator effects */
+        .led-green {
+            box-shadow: 0 0 8px #10B981, 0 0 15px #10B981;
+        }
+        .led-red {
+            box-shadow: 0 0 8px #EF4444, 0 0 15px #EF4444;
+        }
+        .led-amber {
+            box-shadow: 0 0 8px #F59E0B, 0 0 15px #F59E0B;
+        }
+
+        /* CRT Screen Glow for Oscilloscope */
+        .crt-screen {
+            box-shadow: inset 0 0 15px rgba(0, 255, 128, 0.15);
+            background: radial-gradient(circle, #021a10 0%, #000a05 100%);
+        }
+
+        /* Multimeter LCD Screen Effect */
+        .lcd-screen {
+            background-color: #9ea888;
+            color: #1a2412;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 0 1px 0px rgba(255,255,255,0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+
+    <!-- Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-2.5">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
+                        Laboratoire Virtuel de Physique : Circuit RLC Série
+                    </h1>
+                    <p class="text-xs text-slate-400">Régime Sinusoïdal Forcé &bull; Résonance d'Intensité &bull; Déphasage &bull; Mesures Réelles</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="btnWiringAuto" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-md border border-slate-700 flex items-center gap-1.5 transition">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Câbler Automatiquement
+                </button>
+                <button id="btnWiringClear" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-md border border-slate-700 flex items-center gap-1.5 transition">
+                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Effacer Fiches
+                </button>
+                <button id="btnTuneResonance" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-md shadow-md shadow-emerald-900/30 flex items-center gap-1.5 transition border border-emerald-400/30">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Accorder à la Résonance ($f = f_0$)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[1600px] mx-auto p-4 w-full grid grid-cols-1 lg:grid-cols-12 gap-5 flex-grow">
+
+        <!-- LEFT PANEL: Breadboard, Assembly, GBF & Component Box (5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- GBF Generator Control Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl relative overflow-hidden">
+                <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 led-green" id="ledGbfStatus"></span>
+                        <h2 class="text-sm font-bold tracking-wide text-slate-200 uppercase">Générateur Basse Fréquence (GBF)</h2>
+                    </div>
+                    <button id="btnGbfPower" class="px-2.5 py-1 text-xs font-bold rounded bg-emerald-600 text-white border border-emerald-400/30 shadow">ON</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Frequency Control -->
+                    <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                        <label class="text-xs text-amber-400 font-semibold block mb-1">Fréquence ($f$)</label>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="number" id="numGbfF" value="159.15" min="10" max="1000" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-right text-amber-400 font-mono text-sm font-bold">
+                            <span class="text-xs text-slate-400">Hz</span>
+                        </div>
+                        <input type="range" id="sliderGbfF" min="10" max="1000" step="0.5" value="159.15" class="w-full accent-amber-500">
+                    </div>
+
+                    <!-- Amplitude Control -->
+                    <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                        <label class="text-xs text-red-400 font-semibold block mb-1">Amplitude ($E_{\text{eff}}$)</label>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="number" id="numGbfE" value="10.0" min="1" max="20" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-right text-red-400 font-mono text-sm font-bold">
+                            <span class="text-xs text-slate-400">V</span>
+                        </div>
+                        <input type="range" id="sliderGbfE" min="1" max="20" step="0.5" value="10.0" class="w-full accent-red-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- RLC Components Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+                <h2 class="text-sm font-bold tracking-wide text-slate-200 uppercase mb-3 border-b border-slate-800 pb-2 flex items-center justify-between">
+                    <span>Boîte de Composants RLC</span>
+                    <span class="text-xs font-normal text-slate-400">Valeurs Réglables</span>
+                </h2>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Resistance R -->
+                    <div class="flex items-center justify-between gap-3 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <span class="font-bold text-slate-300 w-24">Résistance ($R$)</span>
+                        <input type="range" id="sliderR" min="5" max="300" value="50" step="1" class="w-full accent-blue-500">
+                        <div class="flex items-center gap-1 w-24">
+                            <input type="number" id="numR" value="50" min="5" max="300" class="w-16 bg-slate-900 border border-slate-700 text-right px-1.5 py-0.5 text-blue-400 font-mono rounded">
+                            <span class="text-slate-400">Ω</span>
+                        </div>
+                    </div>
+
+                    <!-- Inductance L -->
+                    <div class="flex items-center justify-between gap-3 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <span class="font-bold text-slate-300 w-24">Inductance ($L$)</span>
+                        <input type="range" id="sliderL" min="10" max="500" value="100" step="1" class="w-full accent-blue-500">
+                        <div class="flex items-center gap-1 w-24">
+                            <input type="number" id="numL" value="100" min="10" max="500" class="w-16 bg-slate-900 border border-slate-700 text-right px-1.5 py-0.5 text-blue-400 font-mono rounded">
+                            <span class="text-slate-400">mH</span>
+                        </div>
+                    </div>
+
+                    <!-- Capacitance C -->
+                    <div class="flex items-center justify-between gap-3 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <span class="font-bold text-slate-300 w-24">Capacité ($C$)</span>
+                        <input type="range" id="sliderC" min="0.5" max="50" value="10" step="0.5" class="w-full accent-blue-500">
+                        <div class="flex items-center gap-1 w-24">
+                            <input type="number" id="numC" value="10" min="0.5" max="50" step="0.5" class="w-16 bg-slate-900 border border-slate-700 text-right px-1.5 py-0.5 text-blue-400 font-mono rounded">
+                            <span class="text-slate-400">µF</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Circuit Breadboard Canvas -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl relative flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        Plaque d'Essais &amp; Schéma de Câblage Interactif
+                    </h3>
+                    <span id="circuitStatusText" class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Circuit Fermé &bull; Fonctionnel</span>
+                </div>
+
+                <!-- Breadboard Interactive SVG Canvas -->
+                <div class="relative w-full h-64 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 select-none">
+                    <svg id="breadboardSvg" class="w-full h-full cursor-crosshair">
+                        <!-- Background Grid Pins -->
+                        <pattern id="gridPins" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <circle cx="10" cy="10" r="1.5" fill="#334155"/>
+                        </pattern>
+                        <rect width="100%" height="100%" fill="#090d16"/>
+                        <rect width="100%" height="100%" fill="url(#gridPins)" opacity="0.6"/>
+
+                        <!-- Interactive Wires Layer -->
+                        <g id="svgWiresLayer"></g>
+                        <!-- Dynamic Components Layer -->
+                        <g id="svgComponentsLayer"></g>
+                        <!-- Terminals & Banana Plugs Layer -->
+                        <g id="svgTerminalsLayer"></g>
+                    </svg>
+
+                    <!-- Switch Overlay Button -->
+                    <button id="btnToggleSwitch" class="absolute bottom-3 right-3 px-3 py-1 bg-amber-600 hover:bg-amber-500 text-slate-900 text-xs font-bold rounded shadow transition">
+                        Interrupteur : <span id="switchStatusLabel">FERMÉ</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT PANEL: Oscilloscope Bicourbe & Scientific Instrumentation (7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+
+            <!-- Dual-Trace Oscilloscope Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col justify-between">
+                <!-- Oscilloscope Header -->
+                <div class="flex flex-wrap justify-between items-center mb-3 gap-2 border-b border-slate-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-yellow-400 led-amber"></span>
+                        <h2 class="text-sm font-bold tracking-wide text-slate-100 uppercase">Oscilloscope Numérique Bicourbe</h2>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnOscilloAutoset" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded shadow border border-blue-400/30">AUTO-SET</button>
+                        <button id="btnOscilloCursor" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded border border-slate-700">Curseurs : OFF</button>
+                    </div>
+                </div>
+
+                <!-- CRT Screen & Controls Layout -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <!-- Oscilloscope CRT Display (8 cols) -->
+                    <div class="md:col-span-8 relative h-64 crt-screen rounded-lg border border-emerald-900/60 overflow-hidden">
+                        <canvas id="canvasOscillo" class="w-full h-full block cursor-pointer"></canvas>
+                        
+                        <!-- Overlay Channel Info -->
+                        <div class="absolute top-2 left-2 flex gap-3 text-[11px] font-mono font-bold">
+                            <span class="text-yellow-400 bg-slate-950/80 px-1.5 py-0.5 rounded border border-yellow-500/30">CH1 : u(t) [Tension]</span>
+                            <span class="text-cyan-400 bg-slate-950/80 px-1.5 py-0.5 rounded border border-cyan-500/30">CH2 : u_R(t) ~ i(t) [Courant]</span>
+                        </div>
+
+                        <!-- Measured Phase / Period Cursor Box -->
+                        <div id="oscilloMeasureBox" class="absolute bottom-2 left-2 text-[10px] font-mono text-emerald-400 bg-slate-950/90 px-2 py-1 rounded border border-emerald-800/80 hidden">
+                            <div>Période $T = \text{--}$ ms</div>
+                            <div>Décalage $\Delta t = \text{--}$ ms &bull; $\varphi = \text{--}^\circ$</div>
+                        </div>
+                    </div>
+
+                    <!-- Oscilloscope Control Knobs (4 cols) -->
+                    <div class="md:col-span-4 bg-slate-950/80 p-3 rounded-lg border border-slate-800 flex flex-col justify-between text-xs space-y-3">
+                        <!-- Timebase div -->
+                        <div>
+                            <div class="flex justify-between font-mono text-slate-300 mb-1">
+                                <span>Base de Temps</span>
+                                <span id="lblTimeBase" class="text-amber-400 font-bold">1.0 ms/div</span>
+                            </div>
+                            <input type="range" id="knobTimeBase" min="0.1" max="10" step="0.1" value="1.0" class="w-full accent-amber-500">
+                        </div>
+
+                        <!-- CH1 Sensitivity -->
+                        <div>
+                            <div class="flex justify-between font-mono text-yellow-400 mb-1">
+                                <span>Calibre CH1</span>
+                                <span id="lblCh1Sens" class="font-bold">5 V/div</span>
+                            </div>
+                            <input type="range" id="knobCh1Sens" min="1" max="20" step="1" value="5" class="w-full accent-yellow-500">
+                        </div>
+
+                        <!-- CH2 Sensitivity -->
+                        <div>
+                            <div class="flex justify-between font-mono text-cyan-400 mb-1">
+                                <span>Calibre CH2</span>
+                                <span id="lblCh2Sens" class="font-bold">2 V/div</span>
+                            </div>
+                            <input type="range" id="knobCh2Sens" min="0.1" max="10" step="0.1" value="2" class="w-full accent-cyan-500">
+                        </div>
+
+                        <!-- Vertical Positions -->
+                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+                            <div>
+                                <label class="text-[10px] text-yellow-400 block font-mono">Pos Y1</label>
+                                <input type="range" id="sliderPosY1" min="-50" max="50" value="0" class="w-full accent-yellow-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-cyan-400 block font-mono">Pos Y2</label>
+                                <input type="range" id="sliderPosY2" min="-50" max="50" value="0" class="w-full accent-cyan-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Multimeter (DMM) & Fresnel Vector Panel -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+                <!-- Digital Multimeter LCD Box (5 cols) -->
+                <div class="md:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col justify-between">
+                    <div class="flex justify-between items-center mb-2 border-b border-slate-800 pb-1.5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                            Multimètre Numérique (RMS)
+                        </h3>
+                        <span class="text-[10px] font-mono text-slate-400">TRMS Auto-range</span>
+                    </div>
+
+                    <!-- Digital LCD Display -->
+                    <div class="lcd-screen p-3 rounded-lg border-2 border-slate-700 flex flex-col gap-1 my-1">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-xs font-bold uppercase tracking-widest text-slate-800">V_eff (Tension)</span>
+                            <span id="dmmVoltage" class="text-xl font-extrabold tracking-wider">10.00 V</span>
+                        </div>
+                        <hr class="border-slate-700/30">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-xs font-bold uppercase tracking-widest text-slate-800">I_eff (Courant)</span>
+                            <span id="dmmCurrent" class="text-xl font-extrabold tracking-wider">0.200 A</span>
+                        </div>
+                    </div>
+
+                    <!-- Selector Knob -->
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <span class="text-slate-400">Mode de Mesure :</span>
+                        <select id="dmmModeSelect" class="bg-slate-950 text-amber-400 font-mono text-xs border border-slate-700 rounded px-2 py-1">
+                            <option value="ALL">V_eff &amp; I_eff Simultanés</option>
+                            <option value="VOLT">Voltmètre Seul (V_eff)</option>
+                            <option value="AMP">Ampèremètre Seul (I_eff)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fresnel Diagram Box (7 cols) -->
+                <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col justify-between">
+                    <div class="flex justify-between items-center mb-2 border-b border-slate-800 pb-1.5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                            Diagramme Vectoriel de Fresnel ($Z$)
+                        </h3>
+                        <span class="text-[10px] font-mono text-purple-400">Impédances complexes</span>
+                    </div>
+                    <div class="relative h-40 w-full bg-slate-950 rounded-lg overflow-hidden border border-slate-800">
+                        <canvas id="canvasFresnel" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frequency Response Curves Panel (I_eff & Phase) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Intensity Resonance Curve -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-xl">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            Courbe de Résonance $I_{\text{eff}}(f)$
+                        </h4>
+                        <span id="lblResonancePeak" class="text-[10px] font-mono text-slate-400">I_max = 0.20 A</span>
+                    </div>
+                    <div class="relative h-44 w-full bg-slate-950 rounded-lg overflow-hidden border border-slate-800">
+                        <canvas id="canvasResonance" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <!-- Phase Shift Curve -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-xl">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                            Déphasage $\varphi(f)$ [d'après $u(t)$ et $i(t)$]
+                        </h4>
+                        <span id="lblPhaseValue" class="text-[10px] font-mono text-amber-400">φ = 0.0°</span>
+                    </div>
+                    <div class="relative h-44 w-full bg-slate-950 rounded-lg overflow-hidden border border-slate-800">
+                        <canvas id="canvasPhase" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Computed Physics Readouts Strip -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs">
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">Fréquence propre ($f_0$)</span>
+                    <span id="outF0" class="font-mono font-bold text-emerald-400 text-sm">159.15 Hz</span>
+                </div>
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">Facteur de Qualité ($Q$)</span>
+                    <span id="outQ" class="font-mono font-bold text-amber-400 text-sm">2.00</span>
+                </div>
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">Bande Passante ($\Delta f$)</span>
+                    <span id="outBW" class="font-mono font-bold text-slate-200 text-sm">79.58 Hz</span>
+                </div>
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">Impédance Totale ($Z$)</span>
+                    <span id="outZ" class="font-mono font-bold text-purple-400 text-sm">50.00 Ω</span>
+                </div>
+                <div class="bg-slate-950 p-2 rounded border border-slate-800 col-span-2 md:col-span-1">
+                    <span class="text-[10px] text-slate-400 block">Régime du Circuit</span>
+                    <span id="outState" class="font-mono font-bold text-blue-400 text-xs">Résonance</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Physics Calculation Engine & UI Interactivity Script -->
+    <script>
+        // Global Circuit State
+        const state = {
+            // Electrical Parameters
+            R: 50,           // Ohms
+            L: 0.1,          // Henrys
+            C: 0.00001,      // Farads (10 uF)
+            f: 159.15,       // Hz (Default resonance frequency)
+            E_eff: 10.0,     // Volts RMS
+            switchClosed: true,
+
+            // Instrumentation Settings
+            gbfOn: true,
+            timeBase: 1.0,   // ms/div
+            ch1Sens: 5.0,    // V/div
+            ch2Sens: 2.0,    // V/div
+            posY1: 0,
+            posY2: 0,
+            cursorOn: false,
+
+            // Animation
+            animPhase: 0,
+
+            // Interactive Wiring State
+            wires: [],        // Connected wires array: {from: id, to: id, color: string}
+            activeTerminal: null
+        };
+
+        // DOM Element Registry
+        const DOM = {
+            numGbfF: document.getElementById('numGbfF'),
+            sliderGbfF: document.getElementById('sliderGbfF'),
+            numGbfE: document.getElementById('numGbfE'),
+            sliderGbfE: document.getElementById('sliderGbfE'),
+            btnGbfPower: document.getElementById('btnGbfPower'),
+            ledGbfStatus: document.getElementById('ledGbfStatus'),
+
+            numR: document.getElementById('numR'),
+            sliderR: document.getElementById('sliderR'),
+            numL: document.getElementById('numL'),
+            sliderL: document.getElementById('sliderL'),
+            numC: document.getElementById('numC'),
+            sliderC: document.getElementById('sliderC'),
+
+            btnWiringAuto: document.getElementById('btnWiringAuto'),
+            btnWiringClear: document.getElementById('btnWiringClear'),
+            btnTuneResonance: document.getElementById('btnTuneResonance'),
+            btnToggleSwitch: document.getElementById('btnToggleSwitch'),
+            switchStatusLabel: document.getElementById('switchStatusLabel'),
+            circuitStatusText: document.getElementById('circuitStatusText'),
+
+            // Oscilloscope
+            btnOscilloAutoset: document.getElementById('btnOscilloAutoset'),
+            btnOscilloCursor: document.getElementById('btnOscilloCursor'),
+            knobTimeBase: document.getElementById('knobTimeBase'),
+            lblTimeBase: document.getElementById('lblTimeBase'),
+            knobCh1Sens: document.getElementById('knobCh1Sens'),
+            lblCh1Sens: document.getElementById('lblCh1Sens'),
+            knobCh2Sens: document.getElementById('knobCh2Sens'),
+            lblCh2Sens: document.getElementById('lblCh2Sens'),
+            sliderPosY1: document.getElementById('sliderPosY1'),
+            sliderPosY2: document.getElementById('sliderPosY2'),
+            oscilloMeasureBox: document.getElementById('oscilloMeasureBox'),
+
+            // Multimeter
+            dmmVoltage: document.getElementById('dmmVoltage'),
+            dmmCurrent: document.getElementById('dmmCurrent'),
+            dmmModeSelect: document.getElementById('dmmModeSelect'),
+
+            // Readouts
+            outF0: document.getElementById('outF0'),
+            outQ: document.getElementById('outQ'),
+            outBW: document.getElementById('outBW'),
+            outZ: document.getElementById('outZ'),
+            outState: document.getElementById('outState'),
+            lblResonancePeak: document.getElementById('lblResonancePeak'),
+            lblPhaseValue: document.getElementById('lblPhaseValue'),
+
+            // Canvases
+            canvasOscillo: document.getElementById('canvasOscillo'),
+            canvasFresnel: document.getElementById('canvasFresnel'),
+            canvasResonance: document.getElementById('canvasResonance'),
+            canvasPhase: document.getElementById('canvasPhase'),
+            breadboardSvg: document.getElementById('breadboardSvg')
+        };
+
+        /**
+         * Core Physics Equation Solver
+         * Calculates complex impedance, resonance frequency, quality factor, and dynamic voltages/currents.
+         */
+        function computeRLCPhysics() {
+            const omega = 2 * Math.PI * state.f;
+            const omega0 = 1 / Math.sqrt(state.L * state.C);
+            const f0 = omega0 / (2 * Math.PI);
+
+            const Z_L = state.L * omega;
+            const Z_C = 1 / (state.C * omega);
+            const X = Z_L - Z_C; // Total reactance
+
+            const Z = Math.sqrt(state.R * state.R + X * X);
+            
+            // If switch is open or GBF is off, current is zero
+            const isAlive = state.switchClosed && state.gbfOn;
+            const I_eff = isAlive ? (state.E_eff / Z) : 0;
+            const I_max = I_eff * Math.sqrt(2);
+            const E_max = state.E_eff * Math.sqrt(2);
+
+            const phi = Math.atan2(X, state.R); // Phase shift in radians
+            const Q = (1 / state.R) * Math.sqrt(state.L / state.C);
+            const delta_f = f0 / Q;
+
+            // Voltage drop across components (RMS)
+            const V_R_eff = I_eff * state.R;
+            const V_L_eff = I_eff * Z_L;
+            const V_C_eff = I_eff * Z_C;
+
+            return {
+                omega, omega0, f0, Z_L, Z_C, X, Z,
+                I_eff, I_max, E_max, phi, Q, delta_f,
+                V_R_eff, V_L_eff, V_C_eff, isAlive
+            };
+        }
+
+        function updateUIControls() {
+            const physics = computeRLCPhysics();
+
+            // Update numerical readouts
+            DOM.outF0.innerText = `${physics.f0.toFixed(2)} Hz`;
+            DOM.outQ.innerText = physics.Q.toFixed(2);
+            DOM.outBW.innerText = `${physics.delta_f.toFixed(2)} Hz`;
+            DOM.outZ.innerText = `${physics.Z.toFixed(2)} Ω`;
+
+            // Phase and Peak labels
+            const phiDeg = (physics.phi * 180 / Math.PI).toFixed(1);
+            DOM.lblPhaseValue.innerText = `φ = ${phiDeg}° (${physics.phi.toFixed(2)} rad)`;
+            DOM.lblResonancePeak.innerText = `I_max = ${(state.E_eff / state.R).toFixed(2)} A`;
+
+            // Circuit Regime State Text
+            const diffF = Math.abs(state.f - physics.f0);
+            if (!physics.isAlive) {
+                DOM.outState.innerText = "Circuit Ouvert";
+                DOM.outState.className = "font-mono font-bold text-red-400 text-xs";
+                DOM.circuitStatusText.innerText = "Circuit Ouvert (Pas de Courant)";
+                DOM.circuitStatusText.className = "text-[11px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800";
+            } else if (diffF < 0.5) {
+                DOM.outState.innerText = "Résonance (f = f₀)";
+                DOM.outState.className = "font-mono font-bold text-emerald-400 text-xs";
+                DOM.circuitStatusText.innerText = "Résonance d'Intensité (i(t) & u(t) en phase)";
+                DOM.circuitStatusText.className = "text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
+            } else if (state.f < physics.f0) {
+                DOM.outState.innerText = "Capacitif (f < f₀)";
+                DOM.outState.className = "font-mono font-bold text-amber-400 text-xs";
+                DOM.circuitStatusText.innerText = "Comportement Capacitif (i(t) en avance)";
+                DOM.circuitStatusText.className = "text-[11px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800";
+            } else {
+                DOM.outState.innerText = "Inductif (f > f₀)";
+                DOM.outState.className = "font-mono font-bold text-cyan-400 text-xs";
+                DOM.circuitStatusText.innerText = "Comportement Inductif (i(t) en retard)";
+                DOM.circuitStatusText.className = "text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800";
+            }
+
+            // Update Digital Multimeter
+            DOM.dmmVoltage.innerText = physics.isAlive ? `${state.E_eff.toFixed(2)} V` : '0.00 V';
+            DOM.dmmCurrent.innerText = physics.isAlive ? `${physics.I_eff.toFixed(3)} A` : '0.000 A';
+        }
+
+        // Default Terminal Locations for Breadboard SVG
+        const terminals = {
+            'GBF_PLUS': { x: 50, y: 60, name: 'GBF (+)', color: '#EF4444' },
+            'GBF_MINUS': { x: 50, y: 180, name: 'GBF (-)', color: '#1E293B' },
+            'R_IN': { x: 150, y: 60, name: 'R (Entrée)', color: '#3B82F6' },
+            'R_OUT': { x: 230, y: 60, name: 'R (Sortie)', color: '#3B82F6' },
+            'L_IN': { x: 230, y: 120, name: 'L (Entrée)', color: '#8B5CF6' },
+            'L_OUT': { x: 310, y: 120, name: 'L (Sortie)', color: '#8B5CF6' },
+            'C_IN': { x: 310, y: 180, name: 'C (Entrée)', color: '#06B6D4' },
+            'C_OUT': { x: 390, y: 180, name: 'C (Sortie)', color: '#06B6D4' },
+            'SWITCH_IN': { x: 390, y: 120, name: 'Interrupteur A', color: '#F59E0B' },
+            'SWITCH_OUT': { x: 390, y: 60, name: 'Interrupteur B', color: '#F59E0B' }
+        };
+
+        function setupAutoWiring() {
+            state.wires = [
+                { from: 'GBF_PLUS', to: 'R_IN', color: '#EF4444' },
+                { from: 'R_OUT', to: 'L_IN', color: '#3B82F6' },
+                { from: 'L_OUT', to: 'C_IN', color: '#8B5CF6' },
+                { from: 'C_OUT', to: 'SWITCH_IN', color: '#06B6D4' },
+                { from: 'SWITCH_OUT', to: 'GBF_MINUS', color: '#10B981' }
+            ];
+            renderBreadboard();
+        }
+
+        function renderBreadboard() {
+            const svg = DOM.breadboardSvg;
+            const compLayer = document.getElementById('svgComponentsLayer');
+            const wireLayer = document.getElementById('svgWiresLayer');
+            const termLayer = document.getElementById('svgTerminalsLayer');
+
+            compLayer.innerHTML = '';
+            wireLayer.innerHTML = '';
+            termLayer.innerHTML = '';
+
+            // Draw Physical Components Schematics
+            // 1. Resistor R
+            compLayer.innerHTML += `
+                <g>
+                    <rect x="160" y="52" width="60" height="16" rx="4" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                    <!-- Color Codes -->
+                    <line x1="172" y1="52" x2="172" y2="68" stroke="#ef4444" stroke-width="3"/>
+                    <line x1="182" y1="52" x2="182" y2="68" stroke="#3b82f6" stroke-width="3"/>
+                    <line x1="192" y1="52" x2="192" y2="68" stroke="#f59e0b" stroke-width="3"/>
+                    <text x="190" y="45" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">R = ${state.R} Ω</text>
+                </g>
+            `;
+
+            // 2. Inductor L
+            compLayer.innerHTML += `
+                <g>
+                    <path d="M 240,120 Q 250,100 260,120 Q 270,100 280,120 Q 290,100 300,120" fill="none" stroke="#8b5cf6" stroke-width="3"/>
+                    <text x="270" y="105" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">L = ${state.L * 1000} mH</text>
+                </g>
+            `;
+
+            // 3. Capacitor C
+            compLayer.innerHTML += `
+                <g>
+                    <line x1="345" y1="165" x2="345" y2="195" stroke="#06b6d4" stroke-width="3"/>
+                    <line x1="355" y1="165" x2="355" y2="195" stroke="#06b6d4" stroke-width="3"/>
+                    <line x1="310" y1="180" x2="345" y2="180" stroke="#475569" stroke-width="2"/>
+                    <line x1="355" y1="180" x2="390" y2="180" stroke="#475569" stroke-width="2"/>
+                    <text x="350" y="158" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">C = ${(state.C * 1e6).toFixed(1)} µF</text>
+                </g>
+            `;
+
+            // 4. Switch
+            const switchPath = state.switchClosed ? "M 390,120 L 390,60" : "M 390,120 L 375,70";
+            compLayer.innerHTML += `
+                <g>
+                    <path d="${switchPath}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                    <text x="415" y="95" fill="#f59e0b" font-size="10" font-family="sans-serif">K (${state.switchClosed ? 'Fermé' : 'Ouvert'})</text>
+                </g>
+            `;
+
+            // Draw Connected Wires
+            state.wires.forEach(w => {
+                const p1 = terminals[w.from];
+                const p2 = terminals[w.to];
+                if (p1 && p2) {
+                    const dx = (p2.x - p1.x) / 2;
+                    const pathD = `M ${p1.x},${p1.y} C ${p1.x + dx},${p1.y + 30} ${p2.x - dx},${p2.y + 30} ${p2.x},${p2.y}`;
+                    wireLayer.innerHTML += `
+                        <path d="${pathD}" fill="none" stroke="${w.color}" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
+                    `;
+                }
+            });
+
+            // Draw Interactive Terminal Dots
+            Object.keys(terminals).forEach(key => {
+                const t = terminals[key];
+                termLayer.innerHTML += `
+                    <g class="cursor-pointer" onclick="handleTerminalClick('${key}')">
+                        <circle cx="${t.x}" cy="${t.y}" r="6" fill="${t.color}" stroke="#ffffff" stroke-width="1.5"/>
+                        <circle cx="${t.x}" cy="${t.y}" r="2" fill="#ffffff"/>
+                    </g>
+                `;
+            });
+        }
+
+        function handleTerminalClick(key) {
+            if (!state.activeTerminal) {
+                state.activeTerminal = key;
+            } else if (state.activeTerminal !== key) {
+                // Add wire
+                state.wires.push({
+                    from: state.activeTerminal,
+                    to: key,
+                    color: terminals[state.activeTerminal].color
+                });
+                state.activeTerminal = null;
+                renderBreadboard();
+            } else {
+                state.activeTerminal = null;
+            }
+        }
+
+        function drawOscilloscopeTrace() {
+            const canvas = DOM.canvasOscillo;
+            const ctx = canvas.getContext('2d');
+            
+            // Adjust resolution
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const cy = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // CRT Background Grid (8x10 div)
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            const gridX = w / 10;
+            const gridY = h / 8;
+            for(let x = 0; x <= w; x += gridX) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+            for(let y = 0; y <= h; y += gridY) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+            ctx.stroke();
+
+            // Central axes
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+            ctx.beginPath();
+            ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h);
+            ctx.moveTo(0, h/2); ctx.lineTo(w, h/2);
+            ctx.stroke();
+
+            const physics = computeRLCPhysics();
+            if (!physics.isAlive) return; // Flat zero line if off
+
+            // Time scaling based on timeBase (ms/div)
+            const totalMsSpan = state.timeBase * 10; // 10 horizontal divisions
+            const totalSecSpan = totalMsSpan / 1000;
+
+            // CH1 Trace: u(t) = E_max * sin(omega * t + animPhase)
+            ctx.strokeStyle = '#EAB308'; // Yellow
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#EAB308';
+            ctx.beginPath();
+
+            const pxPerVoltCh1 = (gridY) / state.ch1Sens; // Pixels per volt
+
+            for (let x = 0; x <= w; x++) {
+                const t = (x / w) * totalSecSpan;
+                const u_t = physics.E_max * Math.sin(physics.omega * t + state.animPhase);
+                const y = cy - (u_t * pxPerVoltCh1) + state.posY1;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // CH2 Trace: u_R(t) = R * i(t) = (R * I_max) * sin(omega * t - phi + animPhase)
+            ctx.strokeStyle = '#06B6D4'; // Cyan
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#06B6D4';
+            ctx.beginPath();
+
+            const uR_max = physics.V_R_eff * Math.sqrt(2);
+            const pxPerVoltCh2 = (gridY) / state.ch2Sens;
+
+            for (let x = 0; x <= w; x++) {
+                const t = (x / w) * totalSecSpan;
+                const uR_t = uR_max * Math.sin(physics.omega * t - physics.phi + state.animPhase);
+                const y = cy - (uR_t * pxPerVoltCh2) + state.posY2;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Reset glow effect
+            ctx.shadowBlur = 0;
+        }
+
+        function drawFresnelDiagram() {
+            const canvas = DOM.canvasFresnel;
+            const ctx = canvas.getContext('2d');
+            
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const ox = 30;
+            const oy = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const physics = computeRLCPhysics();
+
+            // Axes
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(ox, 10); ctx.lineTo(ox, h - 10);
+            ctx.moveTo(10, oy); ctx.lineTo(w - 10, oy);
+            ctx.stroke();
+
+            // Scale for impedance vectors
+            const maxZVal = Math.max(physics.Z, state.R, Math.abs(physics.X)) * 1.25;
+            const scale = Math.min((w - ox - 30) / maxZVal, (h / 2 - 15) / maxZVal);
+
+            const rPix = state.R * scale;
+            const xPix = physics.X * scale;
+
+            // R Vector (Horizontal)
+            ctx.strokeStyle = '#3B82F6';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(ox, oy); ctx.lineTo(ox + rPix, oy);
+            ctx.stroke();
+
+            // X Vector (Vertical)
+            ctx.strokeStyle = '#F59E0B';
+            ctx.beginPath();
+            ctx.moveTo(ox + rPix, oy); ctx.lineTo(ox + rPix, oy - xPix);
+            ctx.stroke();
+
+            // Total Z Vector
+            ctx.strokeStyle = '#A855F7';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(ox, oy); ctx.lineTo(ox + rPix, oy - xPix);
+            ctx.stroke();
+
+            // Labels
+            ctx.font = '10px JetBrains Mono, monospace';
+            ctx.fillStyle = '#3B82F6';
+            ctx.fillText(`R=${state.R}Ω`, ox + rPix / 2 - 10, oy + 12);
+
+            ctx.fillStyle = '#F59E0B';
+            ctx.fillText(`X=${physics.X.toFixed(0)}Ω`, ox + rPix + 5, oy - xPix / 2);
+
+            ctx.fillStyle = '#A855F7';
+            ctx.fillText(`Z=${physics.Z.toFixed(0)}Ω`, ox + rPix / 2 - 10, oy - xPix / 2 - 5);
+        }
+
+        function drawResonanceCurve() {
+            const canvas = DOM.canvasResonance;
+            const ctx = canvas.getContext('2d');
+            
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const padL = 30, padR = 10, padT = 15, padB = 25;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const physics = computeRLCPhysics();
+            const fMin = 10;
+            const fMax = Math.max(1000, physics.f0 * 2.5);
+
+            const I_peak = state.E_eff / state.R;
+            const maxI_axis = I_peak * 1.15;
+
+            const getX = f => padL + ((f - fMin) / (fMax - fMin)) * (w - padL - padR);
+            const getY = I => h - padB - (I / maxI_axis) * (h - padT - padB);
+
+            // Grid
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB);
+            ctx.stroke();
+
+            // Peak f0 dashed vertical
+            const xF0 = getX(physics.f0);
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(xF0, padT); ctx.lineTo(xF0, h - padB);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Plot curve
+            ctx.strokeStyle = '#10B981';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            const steps = 150;
+            for(let i = 0; i <= steps; i++) {
+                const f_val = fMin + (i / steps) * (fMax - fMin);
+                const w_val = 2 * Math.PI * f_val;
+                const Z_val = Math.sqrt(state.R * state.R + Math.pow(state.L * w_val - 1 / (state.C * w_val), 2));
+                const I_val = state.E_eff / Z_val;
+
+                const x = getX(f_val);
+                const y = getY(I_val);
+
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Operating Point
+            const curX = getX(state.f);
+            const curY = getY(physics.I_eff);
+
+            ctx.fillStyle = '#EF4444';
+            ctx.beginPath();
+            ctx.arc(curX, curY, 4.5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawPhaseCurve() {
+            const canvas = DOM.canvasPhase;
+            const ctx = canvas.getContext('2d');
+            
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const padL = 30, padR = 10, padT = 15, padB = 25;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const physics = computeRLCPhysics();
+            const fMin = 10;
+            const fMax = Math.max(1000, physics.f0 * 2.5);
+
+            const getX = f => padL + ((f - fMin) / (fMax - fMin)) * (w - padL - padR);
+            const getY = phi => h - padB - ((phi + Math.PI / 2) / Math.PI) * (h - padT - padB);
+
+            // Grid & Zero-line
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB);
+            ctx.stroke();
+
+            const yZero = getY(0);
+            ctx.strokeStyle = '#334155';
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(padL, yZero); ctx.lineTo(w - padR, yZero);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Plot curve
+            ctx.strokeStyle = '#F59E0B';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            const steps = 150;
+            for(let i = 0; i <= steps; i++) {
+                const f_val = fMin + (i / steps) * (fMax - fMin);
+                const w_val = 2 * Math.PI * f_val;
+                const X_val = state.L * w_val - 1 / (state.C * w_val);
+                const phi_val = Math.atan2(X_val, state.R);
+
+                const x = getX(f_val);
+                const y = getY(phi_val);
+
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Operating Point
+            const curX = getX(state.f);
+            const curY = getY(physics.phi);
+
+            ctx.fillStyle = '#EF4444';
+            ctx.beginPath();
+            ctx.arc(curX, curY, 4.5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function bindEventListeners() {
+            // GBF Frequency
+            DOM.numGbfF.addEventListener('input', (e) => {
+                state.f = parseFloat(e.target.value) || 10;
+                DOM.sliderGbfF.value = state.f;
+                updateAll();
+            });
+            DOM.sliderGbfF.addEventListener('input', (e) => {
+                state.f = parseFloat(e.target.value);
+                DOM.numGbfF.value = state.f;
+                updateAll();
+            });
+
+            // GBF Amplitude
+            DOM.numGbfE.addEventListener('input', (e) => {
+                state.E_eff = parseFloat(e.target.value) || 1;
+                DOM.sliderGbfE.value = state.E_eff;
+                updateAll();
+            });
+            DOM.sliderGbfE.addEventListener('input', (e) => {
+                state.E_eff = parseFloat(e.target.value);
+                DOM.numGbfE.value = state.E_eff;
+                updateAll();
+            });
+
+            // R, L, C Sliders
+            DOM.sliderR.addEventListener('input', (e) => {
+                state.R = parseFloat(e.target.value);
+                DOM.numR.value = state.R;
+                updateAll();
+            });
+            DOM.sliderL.addEventListener('input', (e) => {
+                state.L = parseFloat(e.target.value) / 1000;
+                DOM.numL.value = parseFloat(e.target.value);
+                updateAll();
+            });
+            DOM.sliderC.addEventListener('input', (e) => {
+                state.C = parseFloat(e.target.value) / 1e6;
+                DOM.numC.value = parseFloat(e.target.value);
+                updateAll();
+            });
+
+            // Buttons
+            DOM.btnGbfPower.addEventListener('click', () => {
+                state.gbfOn = !state.gbfOn;
+                DOM.btnGbfPower.innerText = state.gbfOn ? "ON" : "OFF";
+                DOM.btnGbfPower.className = state.gbfOn 
+                    ? "px-2.5 py-1 text-xs font-bold rounded bg-emerald-600 text-white border border-emerald-400/30 shadow"
+                    : "px-2.5 py-1 text-xs font-bold rounded bg-red-600 text-white border border-red-400/30 shadow";
+                DOM.ledGbfStatus.className = state.gbfOn ? "w-2.5 h-2.5 rounded-full bg-blue-500 led-green" : "w-2.5 h-2.5 rounded-full bg-slate-600";
+                updateAll();
+            });
+
+            DOM.btnToggleSwitch.addEventListener('click', () => {
+                state.switchClosed = !state.switchClosed;
+                DOM.switchStatusLabel.innerText = state.switchClosed ? "FERMÉ" : "OUVERT";
+                renderBreadboard();
+                updateAll();
+            });
+
+            DOM.btnTuneResonance.addEventListener('click', () => {
+                const physics = computeRLCPhysics();
+                state.f = parseFloat(physics.f0.toFixed(2));
+                DOM.numGbfF.value = state.f;
+                DOM.sliderGbfF.value = state.f;
+                updateAll();
+            });
+
+            DOM.btnWiringAuto.addEventListener('click', setupAutoWiring);
+            DOM.btnWiringClear.addEventListener('click', () => {
+                state.wires = [];
+                renderBreadboard();
+                updateAll();
+            });
+
+            // Oscilloscope Knobs
+            DOM.knobTimeBase.addEventListener('input', (e) => {
+                state.timeBase = parseFloat(e.target.value);
+                DOM.lblTimeBase.innerText = `${state.timeBase.toFixed(1)} ms/div`;
+            });
+            DOM.knobCh1Sens.addEventListener('input', (e) => {
+                state.ch1Sens = parseFloat(e.target.value);
+                DOM.lblCh1Sens.innerText = `${state.ch1Sens} V/div`;
+            });
+            DOM.knobCh2Sens.addEventListener('input', (e) => {
+                state.ch2Sens = parseFloat(e.target.value);
+                DOM.lblCh2Sens.innerText = `${state.ch2Sens.toFixed(1)} V/div`;
+            });
+            DOM.sliderPosY1.addEventListener('input', (e) => {
+                state.posY1 = parseFloat(e.target.value);
+            });
+            DOM.sliderPosY2.addEventListener('input', (e) => {
+                state.posY2 = parseFloat(e.target.value);
+            });
+
+            DOM.btnOscilloAutoset.addEventListener('click', () => {
+                const physics = computeRLCPhysics();
+                // Auto calculate optimal timebase and sensitivities
+                const periodMs = (1 / state.f) * 1000;
+                state.timeBase = parseFloat((periodMs / 3).toFixed(1));
+                DOM.knobTimeBase.value = state.timeBase;
+                DOM.lblTimeBase.innerText = `${state.timeBase.toFixed(1)} ms/div`;
+
+                state.ch1Sens = Math.ceil(physics.E_max / 3);
+                DOM.knobCh1Sens.value = state.ch1Sens;
+                DOM.lblCh1Sens.innerText = `${state.ch1Sens} V/div`;
+
+                const uR_max = physics.V_R_eff * Math.sqrt(2);
+                state.ch2Sens = parseFloat((uR_max / 2.5).toFixed(1)) || 1;
+                DOM.knobCh2Sens.value = state.ch2Sens;
+                DOM.lblCh2Sens.innerText = `${state.ch2Sens.toFixed(1)} V/div`;
+
+                state.posY1 = 0; state.posY2 = 0;
+                DOM.sliderPosY1.value = 0; DOM.sliderPosY2.value = 0;
+            });
+        }
+
+        function updateAll() {
+            updateUIControls();
+            drawFresnelDiagram();
+            drawResonanceCurve();
+            drawPhaseCurve();
+        }
+
+        function mainLoop() {
+            state.animPhase += 0.06; // Sinusoidal progression speed
+            drawOscilloscopeTrace();
+            renderBreadboard();
+            requestAnimationFrame(mainLoop);
+        }
+
+        // Initialize Virtual Lab
+        window.onload = () => {
+            bindEventListeners();
+            setupAutoWiring();
+            updateAll();
+            mainLoop();
+        };
+    </script>
+</body>
+</html>
